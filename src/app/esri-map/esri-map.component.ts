@@ -9,12 +9,6 @@ import Graphic from "@arcgis/core/Graphic";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import * as MapLocator from "@arcgis/core/rest/locator"
 
-/* import { loadModules } from 'esri-loader';
-import { setDefaultOptions } from 'esri-loader';
-
-import esri = __esri; */
-
-
 @Component({
   selector: 'app-esri-map',
   templateUrl: './esri-map.component.html',
@@ -22,29 +16,36 @@ import esri = __esri; */
 })
 
 export class EsriMapComponent implements OnInit {
-  /* ---> Emit if map is loaded or not <--- */
+  /* ---> Emit if map is loaded correctly or not <--- */
   @Output() mapLoaded = new EventEmitter<boolean>(false);
-
-  /* ---> Test API KEY <--- */
-  private apiKey: string = "AAPKd15f534ac53c4706a5e23dd88bf2e369bXNvUjzN7DY6BoQuRBCJgpb7jJuvMViu9SOelgdz2cyWNQndT0dQyDIrNWBqfUpG";
-
-  private locatorUrl: string = "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 
   /* This inyect the map into a Div tag
     The ViewChild selector (first param) is the className or Class of the Div */
   @ViewChild('mapViewNode', { static: true }) private mapViewElement: ElementRef | any;
+
+  // ---> Properties to configure ARCgis by Esri <--- //
+  /**
+   * @private _apikey sets the api key to connect with api
+   * @private _locatorUrl sets the url to get the name of the reverse geolocalitation (geolocalitation event popup)
+  ** private variables bellow is from default (not assignable, just mockup variable)
+  **/
+  private _apiKey: string = "AAPKd15f534ac53c4706a5e23dd88bf2e369bXNvUjzN7DY6BoQuRBCJgpb7jJuvMViu9SOelgdz2cyWNQndT0dQyDIrNWBqfUpG";
+  private _locatorUrl: string = "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 
   // ---> Properties to use in map layer <--- //
   /**
    * @private _zoom sets map zoom
    * @private _center sets map center
    * @private _basemap sets type of map to show
-    ** private variables bellow is from default (not assignable, just mockup variable)
+   * @private _nextbasemap sets the next layer in the basemap widget
+   * @private _polygonRings Is an array to set the points of polygon
+  ** private variables bellow is from default (not assignable, just mockup variable)
   */
   private _zoom: number = 0;
-  private _center: Array<number> = [0, 0];
+  private _center: Array<number> = [];
   private _basemap: string = "streets";
   private _nextbasemap: string = "satellite";
+  private _polygonRings: Array<number>[] = [];
 
   // ----->> Initial Zoom Get/Set <<----- //
   @Input()
@@ -76,17 +77,40 @@ export class EsriMapComponent implements OnInit {
     return this._basemap;
   }
 
+  // ----->> Next BaseMap Layer Style Get/Set <<----- //
+  @Input()
+  set nextBaseMap(nextBaseMap: string) {
+    this._nextbasemap = nextBaseMap;
+  }
+
+  get nextBaseMap(): string {
+    return this._nextbasemap;
+  }
+
+  // ----->> Polygon rings cordinates to draw a polygon Get/Set <<----- //
+  @Input()
+  set polygonRings(polygonRings: Array<number>[]) {
+    this._polygonRings = polygonRings;
+  }
+
+  get polygonRings(): Array<number>[] {
+    return this._polygonRings;
+  }
+
   constructor() {
 
   }
 
   async initializeMap() {
     try {
-      MapConfig.apiKey = this.apiKey;
+      MapConfig.apiKey = this._apiKey;
 
       const map: Map = new Map({
         basemap: this._basemap
       });
+
+      const graphicsLayer = new GraphicsLayer();
+      map.add(graphicsLayer);
 
       const view = new MapView({
         map: map,
@@ -95,16 +119,12 @@ export class EsriMapComponent implements OnInit {
         container: this.mapViewElement.nativeElement
       });
 
-      /* Polygon drawing test */
-
-      const graphicsLayer = new GraphicsLayer();
-      map.add(graphicsLayer);
-
       const point: any = { //Create a point
         type: "point",
         longitude: -69.898117,
         latitude: 18.476076
       };
+
       const simpleMarkerSymbol = {
         type: "simple-marker",
         color: [226, 119, 40],  // Orange
@@ -120,38 +140,10 @@ export class EsriMapComponent implements OnInit {
       });
       graphicsLayer.add(pointGraphic);
 
-      /*
-         // Create a line geometry
-      const polyline: any = {
-         type: "polyline",
-         paths: [
-             [-118.821527826096, 34.0139576938577], //Longitude, latitude
-             [-118.814893761649, 34.0080602407843], //Longitude, latitude
-             [-118.808878330345, 34.0016642996246]  //Longitude, latitude
-         ]
-      };
-      const simpleLineSymbol = {
-         type: "simple-line",
-         color: [226, 119, 40], // Orange
-         width: 2
-      };
-
-      const polylineGraphic = new Graphic({
-         geometry: polyline,
-         symbol: simpleLineSymbol
-      });
-      graphicsLayer.add(polylineGraphic);
- */
       // Create a polygon geometry
       const polygon: any = {
         type: "polygon",
-        rings: [
-          [-69.898117, 18.476076], //Longitude, latitude
-          [-69.899118, 18.475731], //Longitude, latitude
-          [-69.899382, 18.476417], //Longitude, latitude
-          [-69.897563, 18.477374],   //Longitude, latitude
-          [-69.896892, 18.476687]  //Longitude, latitude
-        ]
+        rings: this._polygonRings
       };
 
       const simpleFillSymbol = {
@@ -168,8 +160,6 @@ export class EsriMapComponent implements OnInit {
         symbol: simpleFillSymbol,
       });
       graphicsLayer.add(polygonGraphic);
-
-      /*  */
 
       const basemapToggle = new BaseMapToggle({
         view: view,
@@ -205,13 +195,11 @@ export class EsriMapComponent implements OnInit {
           location: event.mapPoint // Set the location of the popup to the clicked location
         });
 
-        MapLocator.locationToAddress(this.locatorUrl, params).then((response) => {
+        MapLocator.locationToAddress(this._locatorUrl, params).then((response) => {
           view.popup.content = response.address;
         }).catch(() => {
           view.popup.content = "No he encontrado una dirección para esta localización"
         })
-
-        // Execute a reverse geocode using the clicked location
 
       });
 
