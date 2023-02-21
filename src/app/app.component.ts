@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { BasemapType } from './esri-map/enum/BasemapType.enum';
+import { BasemapType } from './esri-map/BasemapType.enum';
 
 @Component({
   selector: 'app-root',
@@ -22,4 +22,5 @@ export class AppComponent {
   mapLoadedEvent(status: boolean) {
     console.log('The map has loaded: ' + status);
   }
+
 }

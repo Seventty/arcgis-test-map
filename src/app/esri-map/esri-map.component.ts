@@ -217,5 +217,4 @@ export class EsriMapComponent implements OnInit {
   ngOnInit() {
     this.initializeMap();
   }
-
 }
