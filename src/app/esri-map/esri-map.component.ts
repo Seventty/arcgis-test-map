@@ -8,6 +8,8 @@ import BaseMapGallery from "@arcgis/core/widgets/BasemapGallery";
 import Graphic from "@arcgis/core/Graphic";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import * as MapLocator from "@arcgis/core/rest/locator"
+import Expand from "@arcgis/core/widgets/Expand";
+import Sketch from '@arcgis/core/widgets/Sketch';
 
 @Component({
   selector: 'app-esri-map',
@@ -119,7 +121,7 @@ export class EsriMapComponent implements OnInit {
         container: this.mapViewElement.nativeElement
       });
 
-      const point: any = { //Create a point
+      /* const point: any = { //Create a point
         type: "point",
         longitude: -69.898117,
         latitude: 18.476076
@@ -138,7 +140,8 @@ export class EsriMapComponent implements OnInit {
         geometry: point,
         symbol: simpleMarkerSymbol,
       });
-      graphicsLayer.add(pointGraphic);
+
+      graphicsLayer.add(pointGraphic); */
 
       // Create a polygon geometry
       const polygon: any = {
@@ -155,11 +158,17 @@ export class EsriMapComponent implements OnInit {
         }
       };
 
-      const polygonGraphic = new Graphic({
+      /* const polygonGraphic = new Graphic({
         geometry: polygon,
         symbol: simpleFillSymbol,
       });
-      graphicsLayer.add(polygonGraphic);
+      graphicsLayer.add(polygonGraphic); */
+
+      const sketch = new Sketch({
+        layer: graphicsLayer,
+        view: view,
+        creationMode: "update"
+      });
 
       const basemapToggle = new BaseMapToggle({
         view: view,
@@ -175,8 +184,14 @@ export class EsriMapComponent implements OnInit {
         }
       });
 
-      view.ui.add(basemapGallery, "bottom-right");
-      view.ui.add(basemapToggle, "top-right");
+      const bgExpand = new Expand({
+        view: view,
+        content: basemapGallery
+      });
+
+      view.ui.add(bgExpand, "bottom-right");
+      view.ui.add(basemapToggle, "bottom-left");
+      view.ui.add(sketch, "top-right");
 
       view.popup.autoOpenEnabled = false;
 
@@ -202,6 +217,10 @@ export class EsriMapComponent implements OnInit {
         })
 
       });
+
+      sketch.on("update", (event) => {
+        console.log(event);
+      })
 
       // Running the map
       view.when(() => {
