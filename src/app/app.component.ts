@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { BasemapType } from './esri-map/BasemapType.enum';
+import { BasemapType } from './BasemapType.enum';
 
 @Component({
   selector: 'app-root',
