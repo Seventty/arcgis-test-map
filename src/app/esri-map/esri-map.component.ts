@@ -8,8 +8,12 @@ import BaseMapGallery from "@arcgis/core/widgets/BasemapGallery";
 import Graphic from "@arcgis/core/Graphic";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import * as MapLocator from "@arcgis/core/rest/locator"
+import Layer from "@arcgis/core/layers/Layer";
+import Editor from "@arcgis/core/widgets/Editor"
 import Expand from "@arcgis/core/widgets/Expand";
 import Sketch from '@arcgis/core/widgets/Sketch';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer';
 
 @Component({
   selector: 'app-esri-map',
@@ -24,6 +28,7 @@ export class EsriMapComponent implements OnInit {
   /* This inyect the map into a Div tag
     The ViewChild selector (first param) is the className or Class of the Div */
   @ViewChild('mapViewNode', { static: true }) private mapViewElement: ElementRef | any;
+  @ViewChild('editorDiv', { static: true }) private editorDivElement: ElementRef | any;
 
   // ---> Properties to configure ARCgis by Esri <--- //
   /**
@@ -107,18 +112,32 @@ export class EsriMapComponent implements OnInit {
     try {
       MapConfig.apiKey = this._apiKey;
 
+      const featureLayer = new FeatureLayer({
+        url: "https://services.arcgis.com/ijY60SrY8bw5bHSy/arcgis/rest/services/perimetro/FeatureServer/0"
+      });
+
       const map: Map = new Map({
-        basemap: this._basemap
+        basemap: this._basemap,
+        layers: [featureLayer]
       });
 
       const graphicsLayer = new GraphicsLayer();
       map.add(graphicsLayer);
+      // map.add(layer);
 
       const view = new MapView({
         map: map,
         center: this._center,
         zoom: this._zoom,
-        container: this.mapViewElement.nativeElement
+        container: this.mapViewElement.nativeElement,
+        popup: {
+          dockEnabled: true,
+          dockOptions: {
+            position: "top-center",
+            breakpoint: false,
+            buttonEnabled: false
+          }
+        }
       });
 
       /* const point: any = { //Create a point
@@ -144,7 +163,7 @@ export class EsriMapComponent implements OnInit {
       graphicsLayer.add(pointGraphic); */
 
       // Create a polygon geometry
-      const polygon: any = {
+      /* const polygon: any = {
         type: "polygon",
         rings: this._polygonRings
       };
@@ -156,7 +175,7 @@ export class EsriMapComponent implements OnInit {
           color: [255, 255, 255],
           width: 1
         }
-      };
+      }; */
 
       /* const polygonGraphic = new Graphic({
         geometry: polygon,
@@ -189,13 +208,29 @@ export class EsriMapComponent implements OnInit {
         content: basemapGallery
       });
 
+      const pointEditor = new Editor({
+        view: view,
+      });
+      const lineEditor = new Editor({
+        view: view,
+      });
+      const polygonEditor = new Editor({
+        view: view,
+      });
+
+
       view.ui.add(bgExpand, "bottom-right");
       view.ui.add(basemapToggle, "bottom-left");
       view.ui.add(sketch, "top-right");
 
+      view.ui.add(pointEditor, "top-right");
+      view.ui.add(lineEditor, "top-right");
+      view.ui.add(polygonEditor, "top-right");
+
+
       view.popup.autoOpenEnabled = false;
 
-      view.on("click", (event) => {
+      /* view.on("click", (event) => {
         // Get the coordinates of the click on the view
         // around the decimals to 3 decimals
         const lat = Math.round(event.mapPoint.latitude * 1000) / 1000;
@@ -216,15 +251,61 @@ export class EsriMapComponent implements OnInit {
           view.popup.content = "No he encontrado una dirección para esta localización"
         })
 
+      }); */
+
+      sketch.on("create", (event) => {
+        const { state, tool } = event;
+        const geometry = event?.graphic?.geometry
+        console.log("TIPOS A VER", event)
+
+
+        if (state == "complete") {
+
+          /* const editor = new Editor({
+            view: view,
+
+          });
+
+          view.ui.add(editor, "top-left"); */
+
+
+          switch (tool) {
+            case "point":
+              point(geometry.get("longitude"), geometry.get("latitude"))
+              break;
+            case "polyline": // Este ahora sera de formato line
+              polyline(geometry.get("paths"));
+              break;
+            case "polygon":
+              polygon(geometry.get("rings"));
+              break;
+          }
+        }
       });
 
-      sketch.on("update", (event) => {
-        console.log(event);
-      })
+      function point(longitude: number, latitude: number) {
+        console.log(`Ha creado un punto en la posicion: long ${longitude} lat ${latitude}`);
+      }
+
+      function polyline(geometry: Array<Number>) {
+        console.log("Ha creado una linea en los siguientes puntos: ", geometry);
+      }
+
+      function polygon(geometry: Array<number> | number) {
+        console.log("Ha creado un polygono con los siguientes rings", geometry);
+      }
+
+      function rectangle(geometry: Array<number> | number) {
+        console.log("Ha creado un rectangulo con los siguientes rings", geometry);
+      }
+
+      function circle(geometry: Array<number> | number) {
+        console.log("Ha creado un circulo con los siguientes rings", geometry);
+      }
 
       // Running the map
       view.when(() => {
-        this.mapLoaded.emit(true)
+        this.mapLoaded.emit(true);
       })
 
     } catch (error) {
