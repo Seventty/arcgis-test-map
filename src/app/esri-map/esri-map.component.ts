@@ -14,6 +14,7 @@ import Expand from "@arcgis/core/widgets/Expand";
 import Sketch from '@arcgis/core/widgets/Sketch';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer';
+import WebMap from "@arcgis/core/WebMap";
 
 @Component({
   selector: 'app-esri-map',
@@ -36,7 +37,7 @@ export class EsriMapComponent implements OnInit {
    * @private _locatorUrl sets the url to get the name of the reverse geolocalitation (geolocalitation event popup)
   ** private variables bellow is from default (not assignable, just mockup variable)
   **/
-  private _apiKey: string = "AAPKd15f534ac53c4706a5e23dd88bf2e369bXNvUjzN7DY6BoQuRBCJgpb7jJuvMViu9SOelgdz2cyWNQndT0dQyDIrNWBqfUpG";
+  private _apiKey: string = "AAPK79e2816fd7f441be8092728e7bf6b990a4gRX-f5I8ijkfAqIHNtkx3iUXXEHiGf5W9HQhxD_Vw0QeZ85oFnvwge0yC6w_9y";
   private _locatorUrl: string = "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 
   // ---> Properties to use in map layer <--- //
@@ -112,21 +113,35 @@ export class EsriMapComponent implements OnInit {
     try {
       MapConfig.apiKey = this._apiKey;
 
-      const featureLayer = new FeatureLayer({
-        url: "https://services.arcgis.com/ijY60SrY8bw5bHSy/arcgis/rest/services/perimetro/FeatureServer/0"
+      const pointTool = new FeatureLayer({
+        url: "https://services.arcgis.com/ijY60SrY8bw5bHSy/arcgis/rest/services/herramienta_de_puntos/FeatureServer/0"
+      });
+
+      const lineTool = new FeatureLayer({
+        url: "https://services.arcgis.com/ijY60SrY8bw5bHSy/arcgis/rest/services/herramienta_de_creador_de_lineas/FeatureServer/0"
+      });
+
+      const polygonTool = new FeatureLayer({
+        url: "https://services.arcgis.com/ijY60SrY8bw5bHSy/arcgis/rest/services/herramienta_de_perimetros_con_poligonos/FeatureServer/0"
       });
 
       const map: Map = new Map({
         basemap: this._basemap,
-        layers: [featureLayer]
+        layers: [pointTool, lineTool, polygonTool]
       });
 
       const graphicsLayer = new GraphicsLayer();
       map.add(graphicsLayer);
       // map.add(layer);
 
+      const webMap: WebMap = new WebMap({
+        portalItem: {
+          id: "ed86382ac69b44ed8fe06eca8d4a4475"
+        }
+      })
+
       const view = new MapView({
-        map: map,
+        map: webMap,
         center: this._center,
         zoom: this._zoom,
         container: this.mapViewElement.nativeElement,
@@ -208,25 +223,15 @@ export class EsriMapComponent implements OnInit {
         content: basemapGallery
       });
 
-      const pointEditor = new Editor({
+      const editor = new Editor({
         view: view,
       });
-      const lineEditor = new Editor({
-        view: view,
-      });
-      const polygonEditor = new Editor({
-        view: view,
-      });
-
 
       view.ui.add(bgExpand, "bottom-right");
       view.ui.add(basemapToggle, "bottom-left");
-      view.ui.add(sketch, "top-right");
+      //view.ui.add(sketch, "top-right");
 
-      view.ui.add(pointEditor, "top-right");
-      view.ui.add(lineEditor, "top-right");
-      view.ui.add(polygonEditor, "top-right");
-
+      view.ui.add(editor, "top-right");
 
       view.popup.autoOpenEnabled = false;
 
